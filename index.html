@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Teleprompter Pro</title>
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --color-bg: #171614; --color-surface: #1c1b19; --color-surface-2: #201f1d;
+      --color-surface-offset: #22211f; --color-border: #393836;
+      --color-text: #ece8de; --color-text-muted: #b1ada4; --color-text-faint: #7d7a74;
+      --color-primary: #4f98a3; --color-primary-hover: #69aab4; --color-primary-highlight: #313b3b;
+      --color-danger: #dd6974;
+      --radius-sm: 0.375rem; --radius-md: 0.5rem; --radius-lg: 0.75rem; --radius-xl: 1rem; --radius-full: 9999px;
+      --shadow-md: 0 4px 12px oklch(0 0 0 / 0.3);
+      --transition: 180ms cubic-bezier(0.16, 1, 0.3, 1);
+      --font-body: 'Satoshi', Inter, sans-serif;
+    }
+    [data-theme="light"] {
+      --color-bg: #f7f6f2; --color-surface: #f9f8f5; --color-surface-2: #fbfbf9;
+      --color-surface-offset: #f3f0ec; --color-border: #d4d1ca;
+      --color-text: #28251d; --color-text-muted: #6f6d68;
+      --color-primary: #01696f; --color-primary-hover: #0c4e54; --color-primary-highlight: #cedcd8;
+      --color-danger: #a13544;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      height: 100dvh; font-family: var(--font-body); color: var(--color-text);
+      background: var(--color-bg); overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button, input, textarea, select { font: inherit; color: inherit; }
+    button { cursor: pointer; border: none; }
+    textarea { resize: none; }
+
+    /* ===================== TELA 1: SETUP ===================== */
+    #setupScreen {
+      height: 100dvh; overflow-y: auto; overflow-x: hidden;
+      background: radial-gradient(circle at top, color-mix(in oklab, var(--color-primary) 14%, transparent), transparent 35%), var(--color-bg);
+      display: flex; flex-direction: column; gap: 0;
+    }
+
+    .setup-header {
+      padding: 20px 20px 12px;
+      display: flex; align-items: center; gap: 12px;
+      background: color-mix(in oklab, var(--color-surface) 90%, var(--color-bg));
+      border-bottom: 1px solid color-mix(in oklab, var(--color-text) 10%, transparent);
+      position: sticky; top: 0; z-index: 10;
+    }
+    .logo {
+      width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0;
+      background: linear-gradient(145deg, var(--color-primary), color-mix(in oklab, var(--color-primary) 55%, black));
+      color: white;
+    }
+    .logo svg { width: 22px; height: 22px; }
+    .setup-header h1 { font-size: 1.25rem; line-height: 1.1; }
+    .setup-header p { color: var(--color-text-muted); font-size: 0.8rem; }
+
+    .setup-body { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+
+    .card {
+      background: var(--color-surface-2);
+      border: 1px solid color-mix(in oklab, var(--color-text) 10%, transparent);
+      border-radius: var(--radius-xl); padding: 16px;
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .card h2 { font-size: 1rem; }
+    .muted { color: var(--color-text-muted); font-size: 0.8rem; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label { font-size: 0.82rem; color: var(--color-text-muted); }
+    .field textarea {
+      width: 100%; border-radius: var(--radius-lg); padding: 12px;
+      background: var(--color-surface-offset);
+      border: 1px solid color-mix(in oklab, var(--color-text) 10%, transparent);
+      min-height: 140px; line-height: 1.5; font-size: 0.95rem;
+      color: var(--color-text);
+    }
+    .field select {
+      width: 100%; border-radius: var(--radius-lg); padding: 10px 12px;
+      background: var(--color-surface-offset);
+      border: 1px solid color-mix(in oklab, var(--color-text) 10%, transparent);
+      color: var(--color-text); font-size: 0.9rem;
+    }
+
+    .row-label { display: flex; justify-content: space-between; align-items: center; }
+    .value-pill {
+      padding: 3px 10px; border-radius: var(--radius-full);
+      background: var(--color-primary-highlight); font-size: 0.78rem; font-weight: 700;
+    }
+    input[type=range] { width: 100%; accent-color: var(--color-primary); height: 4px; }
+
+    .toggle {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 10px 14px; border-radius: var(--radius-lg);
+      background: var(--color-surface-offset);
+      border: 1px solid color-mix(in oklab, var(--color-text) 10%, transparent);
+      font-size: 0.9rem;
+    }
+    .toggle input { width: 20px; height: 20px; accent-color: var(--color-primary); }
+
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .btn {
+      min-height: 44px; border-radius: var(--radius-lg); padding: 10px;
+      font-size: 0.9rem; font-weight: 600;
+      transition: transform var(--transition), background var(--transition);
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--color-primary); color: white; }
+    .btn-secondary {
+      background: transparent; color: var(--color-text);
+      border: 1px solid color-mix(in oklab, var(--color-text) 12%, transparent);
+    }
+    .btn-danger { background: color-mix(in oklab, var(--color-danger) 18%, var(--color-surface)); color: var(--color-text); }
+    .btn-start {
+      background: var(--color-primary); color: white;
+      min-height: 52px; border-radius: var(--radius-xl);
+      font-size: 1.05rem; font-weight: 700; letter-spacing: 0.5px;
+      width: 100%;
+    }
+    .hidden { display: none !important; }
+
+    /* ===================== TELA 2: PROMPTER ===================== */
+    #prompterScreen {
+      display: none;
+      height: 100dvh; position: relative; background: #000; overflow: hidden;
+    }
+
+    /* topo */
+    .stage-top {
+      position: absolute; top: 0; left: 0; right: 0; z-index: 5;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px 16px;
+      background: linear-gradient(to bottom, rgba(0,0,0,.75), transparent);
+      color: rgba(255,255,255,.8); font-size: 0.82rem;
+      pointer-events: none;
+    }
+
+    /* shell de scroll */
+    .teleprompter-shell {
+      position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden;
+      scroll-behavior: auto;
+      padding: 50dvh 20px 50dvh;
+      display: flex; justify-content: center;
+    }
+    .teleprompter-shell::-webkit-scrollbar { display: none; }
+
+    .teleprompter-text {
+      width: 100%; color: #fff; font-weight: 500;
+      font-size: 42px; line-height: 1.45;
+      white-space: pre-wrap; text-shadow: 0 2px 12px rgba(0,0,0,.5);
+      text-align: center; transform-origin: center;
+    }
+
+    /* linha guia */
+    .guide-line {
+      position: absolute; left: 8%; right: 8%; top: 50%; height: 2px;
+      border-radius: 999px; pointer-events: none; z-index: 4;
+      background: linear-gradient(90deg, transparent, rgba(79,152,163,.8), transparent);
+      box-shadow: 0 0 14px rgba(79,152,163,.25);
+      transform: translateY(-50%);
+    }
+
+    /* área de toque invisível para play/pause */
+    .tap-zone {
+      position: absolute; inset: 0; z-index: 3;
+    }
+
+    /* controles flutuantes */
+    #floatControls {
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 10;
+      background: rgba(0,0,0,.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 12px 16px 24px;
+      display: flex; flex-direction: column; gap: 10px;
+      transition: opacity .35s, transform .35s;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    #floatControls.fade-out { opacity: 0; pointer-events: none; transform: translateY(8px); }
+
+    .ctrl-row { display: flex; align-items: center; gap: 10px; }
+    .ctrl-label { color: rgba(255,255,255,.5); font-size: 0.75rem; white-space: nowrap; }
+    #speedCtrlLive { flex: 1; accent-color: #4f98a3; }
+    .ctrl-val { color: #4f98a3; font-weight: 700; font-size: 0.85rem; min-width: 32px; }
+
+    .ctrl-btn {
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.14);
+      color: #fff; border-radius: 10px;
+      padding: 9px 13px; font-size: 0.88rem;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .ctrl-btn:active { background: rgba(255,255,255,.18); }
+    #btnPlayLive {
+      background: #4f98a3; color: #fff; font-weight: 700;
+      font-size: 1rem; padding: 11px 18px;
+    }
+    #btnPlayLive:active { background: #69aab4; }
+    #btnEdit {
+      background: transparent; border: 1px solid rgba(255,255,255,.2);
+      color: rgba(255,255,255,.6); font-size: 0.8rem; padding: 9px 12px; border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ========== SETUP ========== -->
+<div id="setupScreen">
+  <div class="setup-header">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 7.5h9.5a3.5 3.5 0 0 1 0 7H10"/>
+        <path d="M5 4v16"/><path d="M10 12h9"/>
+      </svg>
+    </div>
+    <div>
+      <h1>Teleprompter Pro</h1>
+      <p>Texto grande · rolagem suave · espelhamento</p>
+    </div>
+  </div>
+
+  <div class="setup-body">
+    <!-- Roteiro -->
+    <div class="card">
+      <h2>Roteiro</h2>
+      <div class="field">
+        <label for="scriptInput">Texto</label>
+        <textarea id="scriptInput">Olá! Este é o seu teleprompter.
+
+Ajuste a velocidade, o tamanho da fonte e o alinhamento do texto.
+
+Use espelhamento horizontal caso você esteja gravando com vidro refletivo.
+
+Toque na tela durante a gravação para iniciar ou pausar a rolagem.</textarea>
+      </div>
+      <div class="btn-row">
+        <label class="btn btn-secondary" for="fileInput" style="display:grid;place-items:center;">
+          Importar .txt
+        </label>
+        <button class="btn btn-danger" id="clearTextBtn">Limpar texto</button>
+      </div>
+      <input id="fileInput" type="file" accept=".txt,text/plain" class="hidden" />
+    </div>
+
+    <!-- Controles -->
+    <div class="card">
+      <h2>Configurações</h2>
+
+      <div class="field">
+        <div class="row-label">
+          <label for="speedRange">Velocidade</label>
+          <span class="value-pill" id="speedValue">40 px/s</span>
+        </div>
+        <input id="speedRange" type="range" min="0" max="200" step="5" value="40" />
+      </div>
+
+      <div class="field">
+        <div class="row-label">
+          <label for="fontRange">Tamanho da fonte</label>
+          <span class="value-pill" id="fontValue">42 px</span>
+        </div>
+        <input id="fontRange" type="range" min="20" max="110" step="2" value="42" />
+      </div>
+
+      <div class="field">
+        <div class="row-label">
+          <label for="lineHeightRange">Entrelinhas</label>
+          <span class="value-pill" id="lineHeightValue">1.45</span>
+        </div>
+        <input id="lineHeightRange" type="range" min="1" max="2.2" step="0.02" value="1.45" />
+      </div>
+
+      <div class="field">
+        <label for="alignSelect">Alinhamento</label>
+        <select id="alignSelect">
+          <option value="left">Esquerda</option>
+          <option value="center" selected>Centro</option>
+          <option value="right">Direita</option>
+        </select>
+      </div>
+
+      <label class="toggle">
+        <span>🔄 Espelhar horizontalmente</span>
+        <input id="mirrorX" type="checkbox" />
+      </label>
+      <label class="toggle">
+        <span>↕️ Espelhar verticalmente</span>
+        <input id="mirrorY" type="checkbox" />
+      </label>
+      <label class="toggle">
+        <span>📏 Mostrar linha guia</span>
+        <input id="guideToggle" type="checkbox" checked />
+      </label>
+      <label class="toggle">
+        <span>☀️ Tema claro</span>
+        <input id="themeToggle" type="checkbox" />
+      </label>
+    </div>
+
+    <button class="btn-start" id="btnStart">▶&nbsp; Iniciar Teleprompter</button>
+    <div style="height: 8px;"></div>
+  </div>
+</div>
+
+<!-- ========== PROMPTER ========== -->
+<div id="prompterScreen">
+  <div class="stage-top">
+    <span id="statusLabel">Pronto</span>
+    <span id="progressLabel">0%</span>
+  </div>
+
+  <div class="guide-line" id="guideLine"></div>
+
+  <div class="teleprompter-shell" id="prompterShell">
+    <div class="teleprompter-text" id="prompterText"></div>
+  </div>
+
+  <!-- toque para play/pause -->
+  <div class="tap-zone" id="tapZone"></div>
+
+  <!-- controles flutuantes -->
+  <div id="floatControls">
+    <div class="ctrl-row">
+      <span class="ctrl-label">Vel</span>
+      <input type="range" id="speedCtrlLive" min="0" max="200" step="5" value="40" />
+      <span class="ctrl-val" id="speedLiveVal">40</span>
+      <button class="ctrl-btn" id="btnPlayLive">▶</button>
+    </div>
+    <div class="ctrl-row">
+      <button class="ctrl-btn" id="btnEdit">← Editar</button>
+      <button class="ctrl-btn" id="btnReset">↺ Início</button>
+      <button class="ctrl-btn" id="btnFontUp">A+</button>
+      <button class="ctrl-btn" id="btnFontDown">A−</button>
+      <button class="ctrl-btn" id="btnFullscreen">⛶</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // refs
+  const setupScreen   = document.getElementById('setupScreen');
+  const prompterScreen= document.getElementById('prompterScreen');
+  const scriptInput   = document.getElementById('scriptInput');
+  const prompterText  = document.getElementById('prompterText');
+  const prompterShell = document.getElementById('prompterShell');
+  const speedRange    = document.getElementById('speedRange');
+  const fontRange     = document.getElementById('fontRange');
+  const lineHeightRange= document.getElementById('lineHeightRange');
+  const alignSelect   = document.getElementById('alignSelect');
+  const mirrorX       = document.getElementById('mirrorX');
+  const mirrorY       = document.getElementById('mirrorY');
+  const guideToggle   = document.getElementById('guideToggle');
+  const themeToggle   = document.getElementById('themeToggle');
+  const speedValue    = document.getElementById('speedValue');
+  const fontValue     = document.getElementById('fontValue');
+  const lineHeightValue= document.getElementById('lineHeightValue');
+  const clearTextBtn  = document.getElementById('clearTextBtn');
+  const fileInput     = document.getElementById('fileInput');
+  const btnStart      = document.getElementById('btnStart');
+  const statusLabel   = document.getElementById('statusLabel');
+  const progressLabel = document.getElementById('progressLabel');
+  const guideLine     = document.getElementById('guideLine');
+  const tapZone       = document.getElementById('tapZone');
+  const floatControls = document.getElementById('floatControls');
+  const speedCtrlLive = document.getElementById('speedCtrlLive');
+  const speedLiveVal  = document.getElementById('speedLiveVal');
+  const btnPlayLive   = document.getElementById('btnPlayLive');
+  const btnEdit       = document.getElementById('btnEdit');
+  const btnReset      = document.getElementById('btnReset');
+  const btnFontUp     = document.getElementById('btnFontUp');
+  const btnFontDown   = document.getElementById('btnFontDown');
+  const btnFullscreen = document.getElementById('btnFullscreen');
+
+  let isPlaying = false;
+  let rafId = null;
+  let lastTs = 0;
+  let fontSize = 42;
+  let ctrlTimer = null;
+
+  // ---- SETUP live preview ----
+  function updateSetupStyles() {
+    speedValue.textContent = `${speedRange.value} px/s`;
+    fontValue.textContent  = `${fontRange.value} px`;
+    lineHeightValue.textContent = Number(lineHeightRange.value).toFixed(2);
+    document.documentElement.setAttribute('data-theme', themeToggle.checked ? 'light' : 'dark');
+  }
+
+  [speedRange, fontRange, lineHeightRange].forEach(el => el.addEventListener('input', updateSetupStyles));
+  alignSelect.addEventListener('change', updateSetupStyles);
+  themeToggle.addEventListener('change', updateSetupStyles);
+
+  clearTextBtn.addEventListener('click', () => { scriptInput.value = ''; });
+  fileInput.addEventListener('change', async (e) => {
+    const [file] = e.target.files || [];
+    if (!file) return;
+    scriptInput.value = await file.text();
+  });
+
+  // ---- INICIAR ----
+  btnStart.addEventListener('click', () => {
+    const text = scriptInput.value.trim();
+    if (!text) { alert('Escreva ou cole seu roteiro!'); return; }
+
+    fontSize = parseInt(fontRange.value);
+    prompterText.textContent = text;
+    prompterText.style.fontSize = fontSize + 'px';
+    prompterText.style.lineHeight = lineHeightRange.value;
+    prompterText.style.textAlign = alignSelect.value;
+
+    const sx = mirrorX.checked ? -1 : 1;
+    const sy = mirrorY.checked ? -1 : 1;
+    prompterText.style.transform = `scale(${sx},${sy})`;
+    guideLine.style.display = guideToggle.checked ? 'block' : 'none';
+
+    speedCtrlLive.value = speedRange.value;
+    speedLiveVal.textContent = speedRange.value;
+
+    prompterShell.scrollTop = 0;
+    updateProgress();
+
+    isPlaying = false;
+    btnPlayLive.textContent = '▶';
+    statusLabel.textContent = 'Pronto';
+
+    setupScreen.style.display = 'none';
+    prompterScreen.style.display = 'block';
+
+    showControls();
+
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  });
+
+  // ---- SCROLL ----
+  function tick(ts) {
+    if (!isPlaying) return;
+    if (!lastTs) lastTs = ts;
+    const delta = (ts - lastTs) / 1000;
+    lastTs = ts;
+    prompterShell.scrollTop += Number(speedCtrlLive.value) * delta;
+    updateProgress();
+    const end = prompterShell.scrollTop + prompterShell.clientHeight >= prompterShell.scrollHeight - 4;
+    if (end) { pauseScroll(); statusLabel.textContent = 'Fim do roteiro'; return; }
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function playScroll() {
+    if (isPlaying) return;
+    isPlaying = true; lastTs = 0;
+    btnPlayLive.textContent = '⏸';
+    statusLabel.textContent = 'Rolando…';
+    rafId = requestAnimationFrame(tick);
+  }
+
+  function pauseScroll() {
+    isPlaying = false;
+    btnPlayLive.textContent = '▶';
+    statusLabel.textContent = 'Pausado';
+    if (rafId) cancelAnimationFrame(rafId);
+    rafId = null; lastTs = 0;
+  }
+
+  function togglePlay() {
+    if (isPlaying) pauseScroll(); else playScroll();
+  }
+
+  function updateProgress() {
+    const max = Math.max(1, prompterShell.scrollHeight - prompterShell.clientHeight);
+    const pct = Math.min(100, (prompterShell.scrollTop / max) * 100);
+    progressLabel.textContent = `${pct.toFixed(0)}%`;
+  }
+
+  prompterShell.addEventListener('scroll', updateProgress, { passive: true });
+
+  // ---- CONTROLES FLUTUANTES ----
+  function showControls() {
+    floatControls.classList.remove('fade-out');
+    clearTimeout(ctrlTimer);
+    if (isPlaying) {
+      ctrlTimer = setTimeout(() => floatControls.classList.add('fade-out'), 3500);
+    }
+  }
+
+  // toque na área = play/pause + mostra controles
+  tapZone.addEventListener('click', () => {
+    togglePlay();
+    showControls();
+  });
+
+  // qualquer toque na tela mostra controles
+  prompterScreen.addEventListener('touchstart', showControls, { passive: true });
+
+  // live speed
+  speedCtrlLive.addEventListener('input', () => {
+    speedLiveVal.textContent = speedCtrlLive.value;
+    showControls();
+  });
+
+  btnPlayLive.addEventListener('click', (e) => { e.stopPropagation(); togglePlay(); showControls(); });
+
+  btnReset.addEventListener('click', (e) => {
+    e.stopPropagation();
+    pauseScroll();
+    prompterShell.scrollTo({ top: 0, behavior: 'smooth' });
+    statusLabel.textContent = 'Reiniciado';
+    showControls();
+  });
+
+  btnEdit.addEventListener('click', (e) => {
+    e.stopPropagation();
+    pauseScroll();
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    prompterScreen.style.display = 'none';
+    setupScreen.style.display = 'block';
+  });
+
+  btnFontUp.addEventListener('click', (e) => {
+    e.stopPropagation();
+    fontSize = Math.min(fontSize + 2, 110);
+    prompterText.style.fontSize = fontSize + 'px';
+    showControls();
+  });
+
+  btnFontDown.addEventListener('click', (e) => {
+    e.stopPropagation();
+    fontSize = Math.max(fontSize - 2, 16);
+    prompterText.style.fontSize = fontSize + 'px';
+    showControls();
+  });
+
+  btnFullscreen.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      await document.exitFullscreen().catch(() => {});
+    }
+    showControls();
+  });
+
+  // ---- TECLADO (desktop) ----
+  document.addEventListener('keydown', (e) => {
+    const tag = document.activeElement?.tagName;
+    const typing = tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT';
+    if (e.code === 'Space' && !typing) { e.preventDefault(); togglePlay(); showControls(); }
+    if (e.key.toLowerCase() === 'r' && !typing) { btnReset.click(); }
+    if (e.key === 'ArrowUp' && !typing) {
+      e.preventDefault();
+      speedCtrlLive.value = Math.min(200, Number(speedCtrlLive.value) + 5);
+      speedLiveVal.textContent = speedCtrlLive.value;
+    }
+    if (e.key === 'ArrowDown' && !typing) {
+      e.preventDefault();
+      speedCtrlLive.value = Math.max(0, Number(speedCtrlLive.value) - 5);
+      speedLiveVal.textContent = speedCtrlLive.value;
+    }
+  });
+
+  updateSetupStyles();
+</script>
+</body>
+</html>
